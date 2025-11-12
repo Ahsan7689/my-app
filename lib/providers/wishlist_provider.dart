@@ -1,104 +1,87 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../models/wishlist_item_model.dart';
 
 class WishlistProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  List<WishlistItemModel> _items = [];
 
-  List<String> _productIds = [];
-  bool _isLoading = false;
+  List<WishlistItemModel> get items => _items;
+  int get itemCount => _items.length;
 
-  List<String> get productIds => _productIds;
-  bool get isLoading => _isLoading;
-  int get itemCount => _productIds.length;
-
-  WishlistProvider() {
-    _auth.authStateChanges().listen((user) {
-      if (user != null) {
-        loadWishlist(user.uid);
-      } else {
-        _productIds = [];
-        notifyListeners();
-      }
-    });
-  }
-
-  bool isWishlisted(String productId) {
-    return _productIds.contains(productId);
+  bool isInWishlist(String productId) {
+    return _items.any((item) => item.productId == productId);
   }
 
   Future<void> loadWishlist(String userId) async {
-    if (userId.isEmpty) return;
-    _isLoading = true;
-    notifyListeners();
     try {
-      final snapshot = await _firestore
+      QuerySnapshot snapshot = await _firestore
           .collection('users')
           .doc(userId)
           .collection('wishlist')
+          .orderBy('addedAt', descending: true)
           .get();
 
-      _productIds = snapshot.docs.map((doc) => doc.id).toList();
-
+      _items = snapshot.docs
+          .map((doc) => WishlistItemModel.fromMap(doc.data() as Map<String, dynamic>))
+          .toList();
+      
+      notifyListeners();
     } catch (e) {
       print('Error loading wishlist: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
   }
 
-  Future<void> toggleWishlist(String productId) async {
-    final user = _auth.currentUser;
-    if (user == null) {
-      print("Cannot toggle wishlist, user is not logged in.");
-      return;
-    }
-    final userId = user.uid;
-
-    final docRef = _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('wishlist')
-        .doc(productId);
-
+  Future<void> addToWishlist(String userId, WishlistItemModel item) async {
     try {
-      if (isWishlisted(productId)) {
-        await docRef.delete();
-        _productIds.remove(productId);
-      } else {
-        await docRef.set({
-          'productId': productId,
-          'addedAt': Timestamp.now(),
-        });
-        _productIds.add(productId);
+      // Check if already exists
+      if (isInWishlist(item.productId)) {
+        await removeFromWishlist(userId, item.productId);
+        return;
       }
+
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('wishlist')
+          .doc(item.productId)
+          .set(item.toMap());
+
+      _items.add(item);
       notifyListeners();
     } catch (e) {
-      print('Error toggling wishlist: $e');
+      print('Error adding to wishlist: $e');
     }
   }
 
-  Future<void> clearWishlist() async {
-     final user = _auth.currentUser;
-    if (user == null) return;
-    final userId = user.uid;
-
+  Future<void> removeFromWishlist(String userId, String productId) async {
     try {
-      final snapshot = await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('wishlist')
-        .get();
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('wishlist')
+          .doc(productId)
+          .delete();
 
-      final batch = _firestore.batch();
-      for (final doc in snapshot.docs) {
-        batch.delete(doc.reference);
+      _items.removeWhere((item) => item.productId == productId);
+      notifyListeners();
+    } catch (e) {
+      print('Error removing from wishlist: $e');
+    }
+  }
+
+  Future<void> clearWishlist(String userId) async {
+    try {
+      WriteBatch batch = _firestore.batch();
+      for (var item in _items) {
+        batch.delete(_firestore
+            .collection('users')
+            .doc(userId)
+            .collection('wishlist')
+            .doc(item.productId));
       }
       await batch.commit();
-      
-      _productIds.clear();
+      _items.clear();
       notifyListeners();
     } catch (e) {
       print('Error clearing wishlist: $e');

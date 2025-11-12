@@ -15,13 +15,11 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   void initState() {
     super.initState();
-    _loadOrders();
-  }
-
-  Future<void> _loadOrders() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final orderProvider = Provider.of<OrderProvider>(context, listen: false);
-    await orderProvider.loadUserOrders(authProvider.user!.uid);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final orderProvider = Provider.of<OrderProvider>(context, listen: false);
+      await orderProvider.loadUserOrders(authProvider.user!.uid); // ✅ Only this user's orders
+    });
   }
 
   @override
@@ -30,7 +28,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('My Orders'),
+        title: const Text('My Orders'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -39,8 +37,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.shopping_bag_outlined, size: 100, color: Colors.grey),
+                children: const [
+                  Icon(Icons.shopping_bag_outlined,
+                      size: 100, color: Colors.grey),
                   SizedBox(height: 16),
                   Text(
                     'No orders yet',
@@ -50,12 +49,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ),
             )
           : ListView.builder(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               itemCount: orderProvider.orders.length,
               itemBuilder: (context, index) {
                 final order = orderProvider.orders[index];
                 return Card(
-                  margin: EdgeInsets.only(bottom: 16),
+                  margin: const EdgeInsets.only(bottom: 16),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
@@ -66,7 +65,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           children: [
                             Text(
                               'Order #${order.id.substring(0, 8)}',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),
@@ -74,50 +73,56 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             _buildStatusChip(order.status),
                           ],
                         ),
-                        Divider(height: 24),
+                        const Divider(height: 24),
                         Row(
                           children: [
-                            Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                            SizedBox(width: 8),
+                            const Icon(Icons.calendar_today,
+                                size: 16, color: Colors.grey),
+                            const SizedBox(width: 8),
                             Text(
-                              DateFormat('MMM dd, yyyy').format(order.orderDate),
-                              style: TextStyle(color: Colors.grey),
+                              DateFormat('MMM dd, yyyy')
+                                  .format(order.orderDate),
+                              style: const TextStyle(color: Colors.grey),
                             ),
                           ],
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Row(
                           children: [
-                            Icon(Icons.shopping_bag, size: 16, color: Colors.grey),
-                            SizedBox(width: 8),
+                            const Icon(Icons.shopping_bag,
+                                size: 16, color: Colors.grey),
+                            const SizedBox(width: 8),
                             Text(
                               '${order.items.length} items',
-                              style: TextStyle(color: Colors.grey),
+                              style: const TextStyle(color: Colors.grey),
                             ),
                           ],
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Row(
                           children: [
-                            Icon(Icons.payment, size: 16, color: Colors.grey),
-                            SizedBox(width: 8),
+                            const Icon(Icons.payment,
+                                size: 16, color: Colors.grey),
+                            const SizedBox(width: 8),
                             Text(
-                              order.paymentMethod.replaceAll('_', ' ').toUpperCase(),
-                              style: TextStyle(color: Colors.grey),
+                              order.paymentMethod
+                                  .replaceAll('_', ' ')
+                                  .toUpperCase(),
+                              style: const TextStyle(color: Colors.grey),
                             ),
                           ],
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
+                            const Text(
                               'Total Amount:',
                               style: TextStyle(fontSize: 16),
                             ),
                             Text(
                               '₹${order.totalAmount.toStringAsFixed(0)}',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.pink,
@@ -165,7 +170,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),

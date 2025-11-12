@@ -39,7 +39,7 @@ class ProductModel {
         parsedDate = DateTime.parse(map['createdAt'] as String);
       } else {
         parsedDate = DateTime.now();
-  }
+      }
     } catch (e) {
       print('Error parsing date: $e');
       parsedDate = DateTime.now();

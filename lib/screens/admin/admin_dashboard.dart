@@ -66,7 +66,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       children: [
                         _buildAnalyticsCard(
                           'Total Income',
-                          '₹${(_analytics['totalIncome'] ?? 0).toStringAsFixed(0)}',
+                          'RS${(_analytics['totalIncome'] ?? 0).toStringAsFixed(0)}',
                           Icons.attach_money,
                           Colors.green,
                         ),

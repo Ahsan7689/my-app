@@ -6,12 +6,10 @@ import 'package:provider/provider.dart';
 import '../../providers/product_provider.dart';
 import '../../models/product_model.dart';
 
-enum _ImageSourceOption { upload, url }
-
 class AddProductScreen extends StatefulWidget {
   final ProductModel? product;
 
-  const AddProductScreen({Key? key, this.product}) : super(key: key);
+   const AddProductScreen({Key? key, this.product}) : super(key: key);
 
   @override
   State<AddProductScreen> createState() => _AddProductScreenState();
@@ -24,12 +22,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
   late TextEditingController _priceController;
   late TextEditingController _discountPriceController;
   late TextEditingController _stockController;
-  late TextEditingController _imageUrlController;
   String _selectedCategory = 'Toys';
   bool _isFeatured = false;
   bool _isLoading = false;
   File? _imageFile;
-  _ImageSourceOption _imageSource = _ImageSourceOption.upload;
 
   @override
   void initState() {
@@ -47,19 +43,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _stockController = TextEditingController(
       text: widget.product?.stock.toString(),
     );
-    _imageUrlController = TextEditingController(
-        text: widget.product != null && widget.product!.images.isNotEmpty
-            ? widget.product!.images.first
-            : '');
     if (widget.product != null) {
       _selectedCategory = widget.product!.category;
       _isFeatured = widget.product!.isFeatured;
-      if (widget.product!.images.isNotEmpty &&
-          !widget.product!.images.first.startsWith('http')) {
-        _imageSource = _ImageSourceOption.upload;
-      } else {
-        _imageSource = _ImageSourceOption.url;
-      }
     }
   }
 
@@ -68,7 +54,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
     if (pickedFile != null) {
       setState(() {
         _imageFile = File(pickedFile.path);
-        _imageUrlController.clear();
       });
     }
   }
@@ -122,7 +107,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Price',
                     border: OutlineInputBorder(),
-                    prefixText: '₹',
+                    prefixText: 'RS',
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
@@ -138,7 +123,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   decoration: const InputDecoration(
                     labelText: 'Discount Price (Optional)',
                     border: OutlineInputBorder(),
-                    prefixText: '₹',
+                    prefixText: 'RS',
                   ),
                   keyboardType: TextInputType.number,
                 ),
@@ -217,64 +202,25 @@ class _AddProductScreenState extends State<AddProductScreen> {
       children: [
         const Text('Product Image', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Radio<_ImageSourceOption>(
-              value: _ImageSourceOption.upload,
-              groupValue: _imageSource,
-              onChanged: (value) {
-                setState(() => _imageSource = value!);
-              },
-            ),
-            const Text('Upload'),
-            Radio<_ImageSourceOption>(
-              value: _ImageSourceOption.url,
-              groupValue: _imageSource,
-              onChanged: (value) {
-                setState(() => _imageSource = value!);
-              },
-            ),
-            const Text('URL'),
-          ],
+        Container(
+          height: 150,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: _imageFile != null
+              ? Image.file(_imageFile!, fit: BoxFit.cover)
+              : (widget.product?.images.isNotEmpty ?? false)
+                  ? Image.network(widget.product!.images.first, fit: BoxFit.cover)
+                  : const Center(child: Text('No image selected')),
         ),
         const SizedBox(height: 8),
-        if (_imageSource == _ImageSourceOption.upload)
-          Container(
-            height: 150,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: _imageFile != null
-                ? Image.file(_imageFile!, fit: BoxFit.cover)
-                : (widget.product?.images.isNotEmpty ?? false)
-                    ? Image.network(widget.product!.images.first,
-                        fit: BoxFit.cover)
-                    : const Center(child: Text('No image selected')),
-          )
-        else
-          TextFormField(
-            controller: _imageUrlController,
-            decoration: const InputDecoration(
-              labelText: 'Image URL',
-              border: OutlineInputBorder(),
-            ),
-            validator: (value) {
-              if (_imageSource == _ImageSourceOption.url &&
-                  (value == null || value.isEmpty)) {
-                return 'Please enter an image URL';
-              }
-              return null;
-            },
-          ),
-        const SizedBox(height: 8),
-        if (_imageSource == _ImageSourceOption.upload)
-          TextButton.icon(
-            onPressed: _pickImage,
-            icon: const Icon(Icons.image),
-            label: const Text('Select Image'),
-          ),
+        TextButton.icon(
+          onPressed: _pickImage,
+          icon: const Icon(Icons.image),
+          label: const Text('Select Image'),
+        ),
       ],
     );
   }
@@ -282,12 +228,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
   Future<void> _saveProduct() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (widget.product == null &&
-        _imageFile == null &&
-        _imageUrlController.text.isEmpty) {
+    if (widget.product == null && _imageFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Please select an image or provide an image URL')),
+        const SnackBar(content: Text('Please select an image for the new product')),
       );
       return;
     }
@@ -297,15 +240,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
     final productProvider = Provider.of<ProductProvider>(context, listen: false);
 
     try {
-      List<String> images = [];
-      if (_imageSource == _ImageSourceOption.url) {
-        images.add(_imageUrlController.text);
-      } else if (widget.product?.images.isNotEmpty ?? false) {
-        images = widget.product!.images;
-      }
-
       final product = ProductModel(
-        id: widget.product?.id ?? '',
+        id: widget.product!.id,
         name: _nameController.text,
         description: _descriptionController.text,
         price: double.parse(_priceController.text),
@@ -313,17 +249,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ? double.parse(_discountPriceController.text)
             : null,
         category: _selectedCategory,
-        images: images,
+        images: widget.product?.images ?? [],
         stock: int.parse(_stockController.text),
         isFeatured: _isFeatured,
         createdAt: widget.product?.createdAt ?? DateTime.now(),
       );
 
       if (widget.product == null) {
-        await productProvider.addProduct(product, imageFile: _imageFile);
+        await productProvider.addProduct(product, _imageFile!);
       } else {
-        await productProvider.updateProduct(widget.product!.id, product,
-            imageFile: _imageFile);
+        var updateProduct = productProvider.updateProduct(product as String, product, imageFile: _imageFile);
+        await updateProduct;
       }
 
       if (mounted) {

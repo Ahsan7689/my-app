@@ -1,4 +1,5 @@
-import 'dart:developer' as developer;
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/product_model.dart';
@@ -6,202 +7,181 @@ import '../models/review_model.dart';
 
 class ProductProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  List<Product> _products = [];
-  List<Product> _featuredProducts = [];
-  List<Product> _bestSellingProducts = [];
-  bool _isLoading = false;
+  List<ProductModel> _products = [];
+  List<ProductModel> _filteredProducts = [];
+  String _selectedCategory = 'All';
+  String _sortBy = 'name';
 
-  List<Product> get products => _products;
-  List<Product> get featuredProducts => _featuredProducts;
-  List<Product> get bestSellingProducts => _bestSellingProducts;
-  bool get isLoading => _isLoading;
+  List<ProductModel> get products => _filteredProducts;
+  List<ProductModel> get featuredProducts =>
+      _products.where((p) => p.isFeatured).toList();
+  String get selectedCategory => _selectedCategory;
 
-  ProductProvider() {
-    fetchProducts();
-  }
-
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
-  }
-
-  Future<void> fetchProducts() async {
-    _setLoading(true);
+  Future<void> loadProducts() async {
     try {
-      final snapshot = await _firestore.collection('products').get();
-      _products = snapshot.docs.map((doc) => Product.fromFirestore(doc)).toList();
+      QuerySnapshot snapshot = await _firestore
+          .collection('products')
+          .orderBy('createdAt', descending: true)
+          .get();
 
-      // Separate featured and best-selling products
-      _featuredProducts = _products.where((p) => p.isFeatured).toList();
-      _bestSellingProducts = _products.where((p) => p.isBestSelling).toList();
-
-    } catch (e, s) {
-      developer.log('Error fetching products', name: 'my_app.product_provider', error: e, stackTrace: s);
-    } finally {
-      _setLoading(false);
+      _products = snapshot.docs
+          .map((doc) => ProductModel.fromMap(
+              doc.data() as Map<String, dynamic>, doc.id))
+          .toList();
+      
+      _filteredProducts = _products;
+      notifyListeners();
+    } catch (e) {
+      print('Error loading products: $e');
     }
   }
 
-  Future<Product?> getProductById(String id) async {
+  void filterByCategory(String category) {
+    _selectedCategory = category;
+    if (category == 'All') {
+      _filteredProducts = _products;
+    } else {
+      _filteredProducts = _products
+          .where((product) => product.category == category)
+          .toList();
+    }
+    _applySorting();
+    notifyListeners();
+  }
+
+  void sortProducts(String sortBy) {
+    _sortBy = sortBy;
+    _applySorting();
+    notifyListeners();
+  }
+
+  void _applySorting() {
+    switch (_sortBy) {
+      case 'price_low':
+        _filteredProducts.sort((a, b) =>
+            a.effectivePrice.compareTo(b.effectivePrice));
+        break;
+      case 'price_high':
+        _filteredProducts.sort((a, b) =>
+            b.effectivePrice.compareTo(a.effectivePrice));
+        break;
+      case 'rating':
+        _filteredProducts.sort((a, b) => b.rating.compareTo(a.rating));
+        break;
+      default:
+        _filteredProducts.sort((a, b) => a.name.compareTo(b.name));
+    }
+  }
+
+  void searchProducts(String query) {
+    if (query.isEmpty) {
+      _filteredProducts = _selectedCategory == 'All'
+          ? _products
+          : _products.where((p) => p.category == _selectedCategory).toList();
+    } else {
+      _filteredProducts = _products
+          .where((product) =>
+              product.name.toLowerCase().contains(query.toLowerCase()) ||
+              product.description.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    }
+    _applySorting();
+    notifyListeners();
+  }
+
+  Future<ProductModel?> getProductById(String id) async {
     try {
-      final doc = await _firestore.collection('products').doc(id).get();
+      DocumentSnapshot doc =
+          await _firestore.collection('products').doc(id).get();
       if (doc.exists) {
-        return Product.fromFirestore(doc);
+        return ProductModel.fromMap(
+            doc.data() as Map<String, dynamic>, doc.id);
       }
     } catch (e) {
-      print('Error getting product by ID: $e');
+      print('Error getting product: $e');
     }
     return null;
   }
 
-  Future<List<Product>> searchProducts(String query) async {
-    if (query.isEmpty) return [];
-    List<Product> results = [];
-    _setLoading(true);
+  // Admin functions
+  Future<bool> addProduct(ProductModel product, File file) async {
     try {
-      // Basic case-insensitive search
-      String lowerCaseQuery = query.toLowerCase();
-      results = _products
-          .where((p) => p.name.toLowerCase().contains(lowerCaseQuery))
-          .toList();
-
+      await _firestore.collection('products').add(product.toMap());
+      await loadProducts();
+      return true;
     } catch (e) {
-      print('Error searching products: $e');
-    } finally {
-      _setLoading(false);
+      print('Error adding product: $e');
+      return false;
     }
-    return results;
   }
 
-  Future<List<ReviewModel>> getProductReviews(String productId) async {
-    List<ReviewModel> reviews = [];
+  Future<bool> updateProduct(String id, ProductModel product, {File? imageFile}) async {
     try {
-      final snapshot = await _firestore
-          .collection('products')
-          .doc(productId)
-          .collection('reviews')
-          .orderBy('createdAt', descending: true)
-          .get();
-      reviews = snapshot.docs.map((doc) => ReviewModel.fromMap(doc.data(), doc.id)).toList();
+      await _firestore.collection('products').doc(id).update(product.toMap());
+      await loadProducts();
+      return true;
     } catch (e) {
-      print('Error getting reviews: $e');
+      print('Error updating product: $e');
+      return false;
     }
-    return reviews;
+  }
+
+  Future<bool> deleteProduct(String id) async {
+    try {
+      await _firestore.collection('products').doc(id).delete();
+      await loadProducts();
+      return true;
+    } catch (e) {
+      print('Error deleting product: $e');
+      return false;
+    }
   }
 
   Future<bool> addReview(ReviewModel review) async {
-    _setLoading(true);
     try {
-      // Add the review to the subcollection
-      await _firestore
-          .collection('products')
-          .doc(review.productId)
+      await _firestore.collection('reviews').add(review.toMap());
+      
+      // Update product rating
+      QuerySnapshot reviews = await _firestore
           .collection('reviews')
-          .add(review.toMap());
-
-      // Use a transaction to update the product's average rating and review count
-      await _firestore.runTransaction((transaction) async {
-        final productRef = _firestore.collection('products').doc(review.productId);
-        final productSnapshot = await transaction.get(productRef);
-
-        if (!productSnapshot.exists) {
-          throw Exception("Product not found!");
-        }
-
-        // Calculate new average rating
-        final reviewsSnapshot = await productRef.collection('reviews').get();
-        final reviews = reviewsSnapshot.docs.map((doc) => ReviewModel.fromMap(doc.data(), doc.id)).toList();
-        
-        double totalRating = reviews.fold(0, (sum, item) => sum + item.rating);
-        double averageRating = reviews.isNotEmpty ? totalRating / reviews.length : 0.0;
-        int reviewCount = reviews.length;
-
-        // Update the product document
-        transaction.update(productRef, {
-          'rating': averageRating,
-          'reviewCount': reviewCount,
-        });
-      });
-
-      // Refresh products to reflect rating changes
-      await fetchProducts();
-      return true;
-    } catch (e) {
-      developer.log('Error adding review', name: 'my_app.product_provider', error: e);
-      return false;
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  // Admin functions
-  Future<bool> addProduct(Product product, List<String> imagePaths) async {
-    _setLoading(true);
-    try {
-      // In a real app, you would upload images to Firebase Storage and get URLs.
-      // For this example, we'll just use the provided URLs directly.
-      product.images = imagePaths; 
-
-      await _firestore.collection('products').add(product.toMap());
-      await fetchProducts(); // Refresh list
-      return true;
-    } catch (e) {
-      developer.log('Error adding product', name: 'my_app.product_provider', error: e);
-      return false;
-    }
-    finally {
-      _setLoading(false);
-    }
-  }
-
-  Future<bool> updateProduct(Product product, List<String> newImageUrls) async {
-    _setLoading(true);
-    try {
-      // Again, handle image uploads properly in a real app
-      product.images = newImageUrls;
-      await _firestore.collection('products').doc(product.id).update(product.toMap());
-      await fetchProducts();
-      return true;
-    } catch (e) {
-      developer.log('Error updating product', name: 'my_app.product_provider', error: e);
-      return false;
-    }
-    finally {
-      _setLoading(false);
-    }
-  }
-
-  Future<bool> deleteProduct(String productId) async {
-    _setLoading(true);
-    try {
-      await _firestore.collection('products').doc(productId).delete();
-      await fetchProducts(); // Refresh list
-      return true;
-    } catch (e) {
-      developer.log('Error deleting product', name: 'my_app.product_provider', error: e);
-      return false;
-    }
-    finally {
-      _setLoading(false);
-    }
-  }
-
-    Future<List<Product>> getProductsByIds(List<String> ids) async {
-    if (ids.isEmpty) return [];
-    
-    List<Product> productList = [];
-    try {
-      final snapshot = await _firestore
-          .collection('products')
-          .where(FieldPath.documentId, whereIn: ids)
+          .where('productId', isEqualTo: review.productId)
           .get();
-          
-      productList = snapshot.docs.map((doc) => Product.fromFirestore(doc)).toList();
-
-    } catch (e, s) {
-      developer.log('Error fetching products by IDs', name: 'my_app.product_provider', error: e, stackTrace: s);
+      
+      double totalRating = 0;
+      for (var doc in reviews.docs) {
+        totalRating += (doc.data() as Map<String, dynamic>)['rating'];
+      }
+      
+      double avgRating = totalRating / reviews.docs.length;
+      
+      await _firestore.collection('products').doc(review.productId).update({
+        'rating': avgRating,
+        'reviewCount': reviews.docs.length,
+      });
+      
+      await loadProducts();
+      return true;
+    } catch (e) {
+      print('Error adding review: $e');
+      return false;
     }
-    return productList;
   }
 
+  Future<List<ReviewModel>> getProductReviews(String productId) async {
+    try {
+      QuerySnapshot snapshot = await _firestore
+          .collection('reviews')
+          .where('productId', isEqualTo: productId)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => ReviewModel.fromMap(
+              doc.data() as Map<String, dynamic>, doc.id))
+          .toList();
+    } catch (e) {
+      print('Error getting reviews: $e');
+      return [];
+    }
+  }
 }

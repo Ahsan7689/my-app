@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/product_provider.dart';
 import 'product_detail_screen.dart';
 
+
 class ShopPage extends StatefulWidget {
   final String? category;
 
@@ -90,7 +91,7 @@ class _ShopPageState extends State<ShopPage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => ProductDetailScreen(product: product),
+                        builder: (_) => ProductDetailScreen(product: product, productId: '',),
                       ),
                     );
                   },
@@ -149,7 +150,7 @@ class _ShopPageState extends State<ShopPage> {
                               ),
                               SizedBox(height: 4),
                               Text(
-                                '₹${product.effectivePrice.toStringAsFixed(0)}',
+                                'RS${product.effectivePrice.toStringAsFixed(0)}',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.pink,

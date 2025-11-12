@@ -65,7 +65,7 @@ class _ShippingScreenState extends State<ShippingScreen> {
                       value: 'upi',
                       title: 'UPI',
                       icon: Icons.account_balance_wallet,
-                      description: 'Pay via UPI apps',
+                      description: 'Pay via easypaisa & jazzcash apps',
                     ),
 
                     // Credit/Debit Card
@@ -73,7 +73,7 @@ class _ShippingScreenState extends State<ShippingScreen> {
                       value: 'card',
                       title: 'Credit/Debit Card',
                       icon: Icons.credit_card,
-                      description: 'Visa, Mastercard, Rupay',
+                      description: 'Visa, Mastercard, PayPak',
                     ),
 
                     // Net Banking
@@ -133,7 +133,7 @@ class _ShippingScreenState extends State<ShippingScreen> {
                       style: TextStyle(fontSize: 18),
                     ),
                     Text(
-                      '₹${widget.totalAmount.toStringAsFixed(0)}',
+                      'RS${widget.totalAmount.toStringAsFixed(0)}',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -245,7 +245,7 @@ class _ShippingScreenState extends State<ShippingScreen> {
     if (success) {
       // Clear cart
       await cartProvider.clearCart(authProvider.user!.uid);
-      
+
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const OrderSuccessScreen()),
         (route) => false,

@@ -73,7 +73,7 @@ class _ManageProductsScreenState extends State<ManageProductsScreen> {
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('₹${product.effectivePrice.toStringAsFixed(0)}'),
+                        Text('RS${product.effectivePrice.toStringAsFixed(0)}'),
                         Text('Stock: ${product.stock}'),
                       ],
                     ),

@@ -102,7 +102,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
                                         ),
                                       ),
                                       Text(
-                                        '₹${item.totalPrice.toStringAsFixed(0)}',
+                                        'RS${item.totalPrice.toStringAsFixed(0)}',
                                         style: TextStyle(fontWeight: FontWeight.bold),
                                       ),
                                     ],
@@ -122,7 +122,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
                                   ),
                                 ),
                                 Text(
-                                  '₹${order.totalAmount.toStringAsFixed(0)}',
+                                  'RS${order.totalAmount.toStringAsFixed(0)}',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -222,7 +222,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
         style: TextStyle(
           color: color,
           fontWeight: FontWeight.bold,
-          fontSize:.12,
+          fontSize: 12,
         ),
       ),
     );

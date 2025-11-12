@@ -1,40 +1,49 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class WishlistItemModel {
-  /// The unique identifier of the wishlist item document.
-  final String id;
-
-  /// The ID of the product that has been added to the wishlist.
   final String productId;
-  
-  /// The ID of the user who owns this wishlist item.
-  final String userId;
-
-  /// The date and time when the item was added to the wishlist.
+  final String productName;
+  final String productImage;
+  final double price;
   final DateTime addedAt;
 
   WishlistItemModel({
-    required this.id,
     required this.productId,
-    required this.userId,
+    required this.productName,
+    required this.productImage,
+    required this.price,
     required this.addedAt,
   });
 
-  /// Creates a [WishlistItemModel] instance from a Firestore document snapshot.
-  factory WishlistItemModel.fromMap(String id, Map<String, dynamic> map) {
+  factory WishlistItemModel.fromMap(Map<String, dynamic> map) {
+    DateTime parsedDate;
+    try {
+      if (map['addedAt'] is Timestamp) {
+        parsedDate = (map['addedAt'] as Timestamp).toDate();
+      } else if (map['addedAt'] is String) {
+        parsedDate = DateTime.parse(map['addedAt'] as String);
+      } else {
+        parsedDate = DateTime.now();
+      }
+    } catch (e) {
+      parsedDate = DateTime.now();
+    }
+
     return WishlistItemModel(
-      id: id,
       productId: map['productId'] as String? ?? '',
-      userId: map['userId'] as String? ?? '',
-      addedAt: (map['addedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      productName: map['productName'] as String? ?? '',
+      productImage: map['productImage'] as String? ?? '',
+      price: (map['price'] as num?)?.toDouble() ?? 0.0,
+      addedAt: parsedDate,
     );
   }
 
-  /// Converts a [WishlistItemModel] instance into a [Map] for Firestore.
   Map<String, dynamic> toMap() {
     return {
       'productId': productId,
-      'userId': userId,
+      'productName': productName,
+      'productImage': productImage,
+      'price': price,
       'addedAt': Timestamp.fromDate(addedAt),
     };
   }
