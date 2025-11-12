@@ -1,112 +1,126 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/cart_item_model.dart';
 
 class CartProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  List<CartItemModel> _items = [];
+  Map<String, CartItem> _items = {};
+  bool _isLoading = false;
+  String? _userId;
 
-  List<CartItemModel> get items => _items;
-  
-  int get itemCount => _items.length;
-  
+  Map<String, CartItem> get itemsMap => _items;
+  List<CartItem> get items => _items.values.toList();
+  bool get isLoading => _isLoading;
+  int get totalItemCount {
+    return _items.values.fold(0, (total, item) => total + item.quantity);
+  }
+
   double get totalAmount {
-    return _items.fold(0.0, (sum, item) => sum + item.totalPrice);
+    return _items.values.fold(0.0, (total, item) => total + item.totalPrice);
+  }
+
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
   }
 
   Future<void> loadCart(String userId) async {
+    if (userId.isEmpty) return;
+    _userId = userId;
+    _setLoading(true);
     try {
-      QuerySnapshot snapshot = await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('cart')
-          .get();
-
-      _items = snapshot.docs
-          .map((doc) => CartItemModel.fromMap(doc.data() as Map<String, dynamic>))
-          .toList();
-      notifyListeners();
-    } catch (e) {
-      print('Error loading cart: $e');
+      final snapshot = await _firestore.collection('users').doc(userId).collection('cart').get();
+      _items = {
+        for (var doc in snapshot.docs)
+          doc.id: CartItem.fromMap(doc.data(), doc.id),
+      };
+    } catch (e, s) {
+      developer.log("Error loading cart", name: 'my_app.cart_provider', error: e, stackTrace: s);
+      // Handle error appropriately
+    } finally {
+      _setLoading(false);
     }
   }
 
-  Future<void> addItem(String userId, CartItemModel item) async {
+  Future<void> addToCart(String productId, int quantity, double price) async {
+    if (_userId == null) return;
+    _setLoading(true);
     try {
-      // Check if item already exists
-      int existingIndex = _items.indexWhere((i) => i.productId == item.productId);
-      
-      if (existingIndex >= 0) {
-        _items[existingIndex].quantity += item.quantity;
-        await _firestore
-            .collection('users')
-            .doc(userId)
-            .collection('cart')
-            .doc(item.productId)
-            .update({'quantity': _items[existingIndex].quantity});
+      final cartItemRef = _firestore.collection('users').doc(_userId).collection('cart');
+
+      if (_items.containsKey(productId)) {
+        // Update quantity if item already exists
+        final existingItem = _items[productId]!;
+        final newQuantity = existingItem.quantity + quantity;
+        await cartItemRef.doc(productId).update({'quantity': newQuantity});
+        _items[productId] = existingItem.copyWith(quantity: newQuantity);
       } else {
-        _items.add(item);
-        await _firestore
-            .collection('users')
-            .doc(userId)
-            .collection('cart')
-            .doc(item.productId)
-            .set(item.toMap());
+        // Add new item if it does not exist
+        final newItem = CartItem(
+          id: productId, // Use product ID as document ID for easy access
+          productId: productId,
+          quantity: quantity,
+          price: price,
+        );
+        await cartItemRef.doc(productId).set(newItem.toMap());
+        _items[productId] = newItem;
       }
-      notifyListeners();
-    } catch (e) {
-      print('Error adding item: $e');
+    } catch (e, s) {
+      developer.log("Error adding to cart", name: 'my_app.cart_provider', error: e, stackTrace: s);
+    } finally {
+      _setLoading(false);
     }
   }
 
-  Future<void> removeItem(String userId, String productId) async {
+  Future<void> removeFromCart(String productId) async {
+    if (_userId == null) return;
+    _setLoading(true);
     try {
-      _items.removeWhere((item) => item.productId == productId);
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('cart')
-          .doc(productId)
-          .delete();
-      notifyListeners();
-    } catch (e) {
-      print('Error removing item: $e');
+      await _firestore.collection('users').doc(_userId).collection('cart').doc(productId).delete();
+      _items.remove(productId);
+    } catch (e, s) {
+      developer.log("Error removing from cart", name: 'my_app.cart_provider', error: e, stackTrace: s);
+    } finally {
+      _setLoading(false);
     }
   }
 
-  Future<void> updateQuantity(String userId, String productId, int quantity) async {
-    try {
-      int index = _items.indexWhere((item) => item.productId == productId);
-      if (index >= 0) {
-        _items[index].quantity = quantity;
-        await _firestore
-            .collection('users')
-            .doc(userId)
-            .collection('cart')
-            .doc(productId)
-            .update({'quantity': quantity});
-        notifyListeners();
+  Future<void> updateItemQuantity(String productId, int newQuantity) async {
+    if (_userId == null || !_items.containsKey(productId)) return;
+
+    if (newQuantity <= 0) {
+      // If quantity is zero or less, remove the item
+      await removeFromCart(productId);
+    } else {
+      _setLoading(true);
+      try {
+        final itemRef = _firestore.collection('users').doc(_userId).collection('cart').doc(productId);
+        await itemRef.update({'quantity': newQuantity});
+        _items[productId] = _items[productId]!.copyWith(quantity: newQuantity);
+      } catch (e, s) {
+        developer.log("Error updating item quantity", name: 'my_app.cart_provider', error: e, stackTrace: s);
+      } finally {
+        _setLoading(false);
       }
-    } catch (e) {
-      print('Error updating quantity: $e');
     }
   }
 
-  Future<void> clearCart(String userId) async {
+  Future<void> clearCart() async {
+    if (_userId == null) return;
+    _setLoading(true);
     try {
-      WriteBatch batch = _firestore.batch();
-      for (var item in _items) {
-        batch.delete(_firestore
-            .collection('users')
-            .doc(userId)
-            .collection('cart')
-            .doc(item.productId));
+      final batch = _firestore.batch();
+      final snapshot = await _firestore.collection('users').doc(_userId).collection('cart').get();
+      for (var doc in snapshot.docs) {
+        batch.delete(doc.reference);
       }
       await batch.commit();
       _items.clear();
-      notifyListeners();
-    } catch (e) {
-      print('Error clearing cart: $e');
+    } catch (e, s) {
+      developer.log("Error clearing cart", name: 'my_app.cart_provider', error: e, stackTrace: s);
+    } finally {
+      _setLoading(false);
     }
   }
 }

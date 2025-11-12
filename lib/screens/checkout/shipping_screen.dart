@@ -245,7 +245,7 @@ class _ShippingScreenState extends State<ShippingScreen> {
     if (success) {
       // Clear cart
       await cartProvider.clearCart(authProvider.user!.uid);
-
+      
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const OrderSuccessScreen()),
         (route) => false,

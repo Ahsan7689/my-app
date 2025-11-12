@@ -34,4 +34,4 @@ class CartItemModel {
   }
 
   double get totalPrice => price * quantity;
-}
+  }

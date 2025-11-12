@@ -66,11 +66,11 @@ class CartScreen extends StatelessWidget {
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
+          children: [
                               Text(
                                 item.productName,
                                 style: TextStyle(
-                                  fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                 ),
                                 maxLines: 2,
@@ -80,11 +80,11 @@ class CartScreen extends StatelessWidget {
                               Text(
                                 '₹${item.price.toStringAsFixed(0)}',
                                 style: TextStyle(
-                                  color: Colors.pink,
+                      color: Colors.pink,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 18,
-                                ),
-                              ),
+                    ),
+                  ),
                               SizedBox(height: 8),
                               Row(
                                 children: [
@@ -172,7 +172,7 @@ class CartScreen extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
+              onPressed: () {
                       if (!authProvider.userModel!.hasDeliveryDetails) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Please add delivery details in profile')),
@@ -186,23 +186,23 @@ class CartScreen extends StatelessWidget {
                           builder: (_) => PlaceOrderScreen(items: cartProvider.items),
                         ),
                       );
-                    },
-                    style: ElevatedButton.styleFrom(
+              },
+              style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.pink,
                       padding: EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
+                shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
+                ),
+              ),
                     child: Text(
-                      'Proceed to Checkout',
+                'Proceed to Checkout',
                       style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
+        ),
+      ),
         ],
       ),
     );

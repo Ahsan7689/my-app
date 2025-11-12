@@ -222,7 +222,7 @@ class _ManageOrdersScreenState extends State<ManageOrdersScreen> {
         style: TextStyle(
           color: color,
           fontWeight: FontWeight.bold,
-          fontSize: 12,
+          fontSize:.12,
         ),
       ),
     );

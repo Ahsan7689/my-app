@@ -36,165 +36,165 @@ class PlaceOrderScreen extends StatelessWidget {
                   Container(
                     margin: EdgeInsets.all(16),
                     padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.shade200,
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade200,
+            blurRadius: 8,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
                             Icon(Icons.location_on, color: Colors.pink),
                             SizedBox(width: 8),
                             Text(
-                              'Delivery Address',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
+                'Delivery Address',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
                         Divider(height: 24),
-                        Text(
-                          userModel.name,
+          Text(
+            userModel.name,
                           style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
+          ),
                         SizedBox(height: 4),
-                        Text(userModel.phone ?? ''),
+          Text(userModel.phone ?? ''),
                         SizedBox(height: 4),
-                        Text('${userModel.address}'),
-                        Text('${userModel.city} - ${userModel.postalCode}'),
-                      ],
-                    ),
+          Text('${userModel.address}'),
+          Text('${userModel.city} - ${userModel.postalCode}'),
+        ],
+      ),
                   ),
 
                   // Order Items
                   Container(
                     margin: EdgeInsets.symmetric(horizontal: 16),
                     padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.shade200,
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade200,
+            blurRadius: 8,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
                           'Order Items (${items.length})',
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
                         Divider(height: 24),
-                        ListView.builder(
-                          shrinkWrap: true,
+          ListView.builder(
+            shrinkWrap: true,
                           physics: NeverScrollableScrollPhysics(),
                           itemCount: items.length,
-                          itemBuilder: (context, index) {
+            itemBuilder: (context, index) {
                             final item = items[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12.0),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 60,
-                                    height: 60,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade200,
-                                      borderRadius: BorderRadius.circular(8),
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(8),
                                       image: item.productImage.isNotEmpty
-                                          ? DecorationImage(
+                            ? DecorationImage(
                                               image: NetworkImage(item.productImage),
-                                              fit: BoxFit.cover,
-                                            )
-                                          : null,
-                                    ),
-                                  ),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
+                      ),
+                    ),
                                   SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                                           item.productName,
                                           style: TextStyle(fontWeight: FontWeight.bold),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                                         SizedBox(height: 4),
-                                        Text(
+                          Text(
                                           'Qty: ${item.quantity}',
                                           style: TextStyle(color: Colors.grey),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Text(
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
                                     '₹${item.totalPrice.toStringAsFixed(0)}',
                                     style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.pink,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                        fontWeight: FontWeight.bold,
+                        color: Colors.pink,
+                      ),
                     ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
                   ),
 
                   // Order Summary
                   Container(
                     margin: EdgeInsets.all(16),
                     padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.shade200,
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade200,
+            blurRadius: 8,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
                         Text(
-                          'Order Summary',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+            'Order Summary',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
                         Divider(height: 24),
-                        _buildSummaryRow('Subtotal', subtotal),
+          _buildSummaryRow('Subtotal', subtotal),
                         SizedBox(height: 8),
-                        _buildSummaryRow('Shipping', shipping),
+          _buildSummaryRow('Shipping', shipping),
                         Divider(height: 24),
-                        _buildSummaryRow('Total', total, isTotal: true),
-                      ],
-                    ),
+          _buildSummaryRow('Total', total, isTotal: true),
+        ],
+      ),
                   ),
                 ],
               ),
